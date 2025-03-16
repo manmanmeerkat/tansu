@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Worker {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reports   Report[]
+}
+
+model Report {
+  id               String   @id @default(uuid())
+  productCode      String
+  boxType          String
+  currentFraction  Float
+  previousFraction Float
+  totalFraction    Float
+  lotNumber        String?
+  workerId         String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  worker           Worker   @relation(fields: [workerId], references: [id])
+
+  @@index([workerId])
+}
