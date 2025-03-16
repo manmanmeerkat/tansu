@@ -1,5 +1,5 @@
 // CommonJS形式のシードスクリプト
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
