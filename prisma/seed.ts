@@ -1,9 +1,7 @@
-// CommonJS形式のシードスクリプト
-import { PrismaClient } from '@prisma/client';
+// prisma/seed.js
+const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
+const prisma = new PrismaClient();
 
 async function main() {
   try {
@@ -12,10 +10,6 @@ async function main() {
     // 接続テスト
     await prisma.$connect();
     console.log('データベースに接続しました！');
-    
-    // 既存のデータ確認
-    const workerCount = await prisma.worker.count();
-    console.log(`現在の作業者数: ${workerCount}`);
     
     // ダミーの作業者データ
     const dummyWorkers = [
@@ -66,28 +60,28 @@ async function main() {
       const dummyReports = [
         {
           productCode: 'A-1001',
-          boxType: '小箱',
-          currentFraction: 2.5,
-          previousFraction: 1.0,
-          totalFraction: 3.5,
+          boxType: 'B',
+          currentFraction: 2,
+          previousFraction: 1,
+          totalFraction: 3,
           lotNumber: 'LOT-2023-001',
           workerId: firstWorkerId
         },
         {
           productCode: 'B-2002',
-          boxType: '中箱',
-          currentFraction: 3.2,
-          previousFraction: 0.8,
-          totalFraction: 4.0,
+          boxType: 'C',
+          currentFraction: 3,
+          previousFraction: 1,
+          totalFraction: 4,
           lotNumber: 'LOT-2023-002',
           workerId: firstWorkerId
         },
         {
           productCode: 'C-3003',
-          boxType: '大箱',
-          currentFraction: 1.5,
-          previousFraction: 2.0,
-          totalFraction: 3.5,
+          boxType: 'G',
+          currentFraction: 1,
+          previousFraction: 2,
+          totalFraction: 3,
           lotNumber: null,
           workerId: firstWorkerId
         }
@@ -105,23 +99,17 @@ async function main() {
           console.error(`日報 ${report.productCode} の追加中にエラーが発生しました:`, err);
         }
       }
-      
-      // 最終確認
-      const reportCount = await prisma.report.count();
-      console.log(`現在の日報数: ${reportCount}`);
     }
   } catch (error) {
     console.error('処理中にエラーが発生しました:', error);
+  } finally {
+    await prisma.$disconnect();
+    console.log('データベース接続を終了しました');
   }
-
-  console.log('シードデータの処理を完了しました');
 }
 
 main()
   .catch((e) => {
     console.error('シードデータの追加中にエラーが発生しました:', e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
