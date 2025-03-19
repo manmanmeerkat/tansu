@@ -1,0 +1,4 @@
+DATABASE_URL="postgresql://postgres:manmanmeer@db.xxx.supabase.co:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY="xxx"
+DIRECT_URL="postgresql://postgres:manmanmeer@db.xxx.supabase.co:5432/postgres"
