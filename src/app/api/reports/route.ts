@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const url = request.url;
     const { searchParams } = new URL(url);
     const workerId = searchParams.get('workerId');
-    
+
     console.log(`GET /api/reports - workerId: ${workerId}`);
     
     if (!workerId) {
@@ -56,10 +56,12 @@ export async function POST(request: NextRequest) {
     const currentFraction = parseInt(body.currentFraction) || 0;
     const previousFraction = parseInt(body.previousFraction) || 0;
     const totalFraction = currentFraction + previousFraction;
+    const workingTimeSeconds = body.workingTimeSeconds || 0;
     
     console.log(`Creating report for workerId: ${body.workerId}`);
     console.log(`Product: ${body.productCode}, Box: ${body.boxType}`);
     console.log(`Current: ${currentFraction}, Previous: ${previousFraction}, Total: ${totalFraction}`);
+    console.log(`Working time: ${workingTimeSeconds} seconds`);
     
     // データベース接続を確認
     await prisma.$connect();
@@ -73,6 +75,7 @@ export async function POST(request: NextRequest) {
         previousFraction: previousFraction,
         totalFraction: totalFraction,
         lotNumber: body.lotNumber || null,
+        workingTimeSeconds: workingTimeSeconds,
         workerId: body.workerId,
       },
     });

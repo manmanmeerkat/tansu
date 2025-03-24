@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import WorkTimer from "@/components/WorkTimer";
 
 interface Worker {
   id: string;
@@ -17,6 +18,7 @@ interface Report {
   previousFraction: number;
   totalFraction: number;
   lotNumber: string | null;
+  workingTimeSeconds?: number; // 作業時間を追加
   createdAt: string;
   workerId: string;
   worker: Worker;
@@ -30,6 +32,7 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [workTimeSeconds, setWorkTimeSeconds] = useState<number>(0); // 作業時間を記録
 
   // フォーム状態
   const [formData, setFormData] = useState({
@@ -38,6 +41,7 @@ export default function ReportsPage() {
     currentFraction: "",
     previousFraction: "",
     lotNumber: "",
+    workingTimeSeconds: 0,
   });
 
   // 合計端数（計算済み）
@@ -126,6 +130,24 @@ export default function ReportsPage() {
     }
   };
 
+  // 作業時間の更新ハンドラー
+  const handleTimeUpdate = (seconds: number) => {
+    setWorkTimeSeconds(seconds);
+    setFormData((prev) => ({
+      ...prev,
+      workingTimeSeconds: seconds,
+    }));
+  };
+
+  // 作業終了ハンドラー
+  const handleWorkComplete = (seconds: number) => {
+    setWorkTimeSeconds(seconds);
+    setFormData((prev) => ({
+      ...prev,
+      workingTimeSeconds: seconds,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -159,7 +181,9 @@ export default function ReportsPage() {
         currentFraction: "",
         previousFraction: "",
         lotNumber: "",
+        workingTimeSeconds: 0,
       });
+      setWorkTimeSeconds(0);
       fetchReports();
     } catch (error) {
       console.error("Error submitting report:", error);
@@ -189,6 +213,19 @@ export default function ReportsPage() {
     }).format(date);
   };
 
+  // 作業時間のフォーマット（時:分:秒）
+  const formatWorkTime = (seconds: number | undefined) => {
+    if (!seconds) return "-";
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    return [hours, minutes, remainingSeconds]
+      .map((val) => val.toString().padStart(2, "0"))
+      .join(":");
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* 作業者情報 */}
@@ -207,6 +244,12 @@ export default function ReportsPage() {
           <p>{error}</p>
         </div>
       )}
+
+      {/* 作業時間計測コンポーネント */}
+      <WorkTimer
+        onTimeUpdate={handleTimeUpdate}
+        onComplete={handleWorkComplete}
+      />
 
       {/* 入力フォーム */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6">
@@ -318,6 +361,18 @@ export default function ReportsPage() {
                 className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                作業時間
+              </label>
+              <input
+                type="text"
+                value={formatWorkTime(workTimeSeconds)}
+                className="w-full px-3 py-2 border bg-gray-100 rounded"
+                readOnly
+              />
+            </div>
           </div>
 
           <div className="text-right">
@@ -361,6 +416,9 @@ export default function ReportsPage() {
                     合計端数
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    作業時間
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ロット
                   </th>
                 </tr>
@@ -385,6 +443,9 @@ export default function ReportsPage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                       {Math.floor(report.totalFraction)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {formatWorkTime(report.workingTimeSeconds)}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                       {report.lotNumber || "-"}

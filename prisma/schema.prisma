@@ -3,31 +3,32 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model Worker {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   reports   Report[]
 }
 
 model Report {
   id               String   @id @default(uuid())
-  productCode      String
-  boxType          String
-  currentFraction  Float
-  previousFraction Float
-  totalFraction    Float
-  lotNumber        String?
+  productCode      String   // 品番
+  boxType          String   // 箱種
+  currentFraction  Float    // 今回端数
+  previousFraction Float    // 前回端数
+  totalFraction    Float    // 合計端数
+  lotNumber        String?  // ロット番号（任意）
+  workingTimeSeconds Int?    // 作業時間（秒）- 新規追加
   workerId         String
+  worker           Worker   @relation(fields: [workerId], references: [id])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  worker           Worker   @relation(fields: [workerId], references: [id])
 
   @@index([workerId])
 }
