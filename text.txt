@@ -1,4 +1,275 @@
-DATABASE_URL="postgresql://postgres:manmanmeer@db.xxx.supabase.co:5432/postgres"
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY="xxx"
-DIRECT_URL="postgresql://postgres:manmanmeer@db.xxx.supabase.co:5432/postgres"
+端数合わせ作業日報システム - プロジェクト概要
+プロジェクト概要
+製造現場向けの「端数合わせ作業日報」アプリケーションです。このシステムは作業者が日々の作業における端数情報を記録・管理するためのウェブアプリケーションです。
+技術スタック
+
+フロントエンド: Next.js (App Router構成)
+バックエンド: Next.js API Routes
+データベース: Supabase (PostgreSQL)
+ORM: Prisma
+スタイリング: Tailwind CSS
+デプロイ: Vercel
+
+主な機能
+
+作業者の管理（登録・選択）
+端数合わせ日報の入力
+
+品番（テキスト）
+箱種（B, C, G, J, E, L, K から選択）
+今回端数（整数値）
+前回端数（整数値）
+合計端数（自動計算、整数値）
+ロット（任意入力）
+
+
+入力データの保存と一覧表示
+
+フォルダ構成
+コピーtansu-report/
+├── .env                   # 環境変数設定ファイル
+├── .gitignore             # Git除外ファイル設定
+├── package.json           # プロジェクト設定とスクリプト
+├── prisma/                # Prisma関連ファイル
+│   ├── schema.prisma      # データベーススキーマ定義
+│   └── seed.ts            # データベース初期データ投入
+├── public/                # 静的ファイル
+├── src/                   # ソースコード
+│   ├── app/               # Next.js App Router構造
+│   │   ├── api/           # APIエンドポイント
+│   │   │   ├── reports/   # 日報関連API
+│   │   │   │   └── route.ts  # 日報CRUD操作
+│   │   │   └── workers/   # 作業者関連API
+│   │   │       └── route.ts  # 作業者CRUD操作
+│   │   ├── globals.css    # グローバルスタイル
+│   │   ├── layout.tsx     # 共通レイアウト
+│   │   ├── page.tsx       # トップページ（作業者選択画面）
+│   │   └── reports/       # 日報関連ページ
+│   │       └── [workerId]/  # 動的ルート（作業者ID）
+│   │           └── page.tsx # 日報入力・一覧ページ
+│   └── lib/               # ユーティリティ
+│       ├── prisma.ts      # Prismaクライアント設定
+│       └── supabase.ts    # Supabaseクライアント設定
+└── next.config.js         # Next.js設定ファイル
+主要ファイルの内容
+prisma/schema.prisma
+prismaコピーgenerator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Worker {
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  reports   Report[]
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  productCode    String   // 品番
+  boxType        String   // 箱種
+  currentFraction Float    // 今回端数
+  previousFraction Float    // 前回端数
+  totalFraction   Float    // 合計端数
+  lotNumber      String?  // ロット番号（任意）
+  workerId       String
+  worker         Worker   @relation(fields: [workerId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([workerId])
+}
+src/app/reports/[workerId]/page.tsx (一部抜粋)
+tsxコピー'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+
+// インターフェース定義
+interface Worker {
+  id: string;
+  name: string;
+}
+
+interface Report {
+  id: string;
+  productCode: string;
+  boxType: string;
+  currentFraction: number;
+  previousFraction: number;
+  totalFraction: number;
+  lotNumber: string | null;
+  createdAt: string;
+  workerId: string;
+  worker: Worker;
+}
+
+export default function ReportsPage() {
+  // 状態管理と初期化
+  const params = useParams<{ workerId: string }>();
+  const workerId = params.workerId;
+
+  const [worker, setWorker] = useState<Worker | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // フォーム状態
+  const [formData, setFormData] = useState({
+    productCode: '',
+    boxType: '',
+    currentFraction: '',
+    previousFraction: '',
+    lotNumber: '',
+  });
+
+  // 合計端数（計算済み）
+  const totalFraction = 
+    (parseInt(formData.currentFraction) || 0) + 
+    (parseInt(formData.previousFraction) || 0);
+
+  // データ取得
+  useEffect(() => {
+    if (workerId) {
+      fetchWorkerData();
+      fetchReports();
+    }
+  }, [workerId]);
+
+  // フォーム入力処理
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    // 入力処理ロジック
+  };
+
+  // 入力フォーム送信時の処理
+  const handleSubmit = async (e: React.FormEvent) => {
+    // 送信処理ロジック
+  };
+
+  // レンダリング（UIコンポーネント）
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* 作業者情報 */}
+      {/* エラーメッセージ */}
+      {/* 入力フォーム */}
+      {/* 日報一覧 */}
+    </div>
+  );
+}
+src/app/api/reports/route.ts
+typescriptコピーimport { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(request: NextRequest) {
+  try {
+    // requestパラメータを明示的に使用
+    const url = request.url;
+    const { searchParams } = new URL(url);
+    const workerId = searchParams.get('workerId');
+
+    console.log(`GET /api/reports - workerId: ${workerId}`);
+    
+    if (!workerId) {
+      console.log('Error: workerId is required');
+      return NextResponse.json({ error: '作業者IDが必要です' }, { status: 400 });
+    }
+    
+    console.log(`Fetching reports for workerId: ${workerId}`);
+    
+    // データベース接続を確認
+    await prisma.$connect();
+    console.log('Database connection established');
+    
+    const reports = await prisma.report.findMany({
+      where: {
+        workerId: workerId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        worker: true,
+      },
+    });
+    
+    console.log(`Found ${reports.length} reports`);
+    
+    return NextResponse.json(reports);
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    return NextResponse.json({ error: '日報の取得に失敗しました', details: error }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    console.log('POST /api/reports - Request body:', body);
+    
+    if (!body.productCode || !body.boxType || !body.workerId) {
+      console.log('Error: Required fields are missing');
+      return NextResponse.json({ error: '必須項目を入力してください' }, { status: 400 });
+    }
+    
+    // 入力値を整数に変換して計算
+    const currentFraction = parseInt(body.currentFraction) || 0;
+    const previousFraction = parseInt(body.previousFraction) || 0;
+    const totalFraction = currentFraction + previousFraction;
+    
+    console.log(`Creating report for workerId: ${body.workerId}`);
+    console.log(`Product: ${body.productCode}, Box: ${body.boxType}`);
+    console.log(`Current: ${currentFraction}, Previous: ${previousFraction}, Total: ${totalFraction}`);
+    
+    // データベース接続を確認
+    await prisma.$connect();
+    console.log('Database connection established');
+    
+    const report = await prisma.report.create({
+      data: {
+        productCode: body.productCode,
+        boxType: body.boxType,
+        currentFraction: currentFraction,
+        previousFraction: previousFraction,
+        totalFraction: totalFraction,
+        lotNumber: body.lotNumber || null,
+        workerId: body.workerId,
+      },
+    });
+    
+    console.log(`Report created with ID: ${report.id}`);
+    
+    return NextResponse.json(report, { status: 201 });
+  } catch (error) {
+    console.error('Error creating report:', error);
+    return NextResponse.json({ error: '日報の作成に失敗しました', details: error }, { status: 500 });
+  }
+}
+src/lib/prisma.ts
+typescriptコピーimport { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+環境変数設定 (.env)
+コピーDATABASE_URL="postgresql://postgres:[PASSWORD]@[PROJECT-ID]-pooler.supabase.co:5432/postgres?pgbouncer=true&sslmode=require"
+DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-ID].supabase.co:5432/postgres?sslmode=require"
+NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT-ID].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="[ANON-KEY]"
+デプロイ時の注意点
+
+Vercelへのデプロイ時は環境変数を正しく設定する
+Supabaseは「Connection Pooling」を使用するよう設定
+Supabaseのセキュリティ設定で「Allow access from all IP addresses」を有効化
+package.jsonのbuildスクリプトにprisma generateを含める
+
+これらの情報は、端数合わせ作業日報システムの概要と実装詳細をまとめたものです。新しいチャットでもこの情報を参照して、プロジェクトの理解と問題解決に役立てることができます。再試行Claudeは間違えることがあります。回答内容を必ずご確認ください。 3.7 Sonnetスタイルを選択
